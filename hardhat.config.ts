@@ -3,6 +3,7 @@ import '@openzeppelin/hardhat-upgrades';
 import '@primitivefi/hardhat-marmite';
 import { HardhatUserConfig, task } from 'hardhat/config';
 require('dotenv').config();
+require('hardhat-deploy');
 
 const baseConfig: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
