@@ -20,7 +20,7 @@
   "author": "Daniel Gretzke",
   "license": "AGPL-3.0-only",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13",
     "@openzeppelin/hardhat-upgrades": "^1.22.1",
     "@primitivefi/hardhat-marmite": "0.0.4",
