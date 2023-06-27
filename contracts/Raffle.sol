@@ -120,6 +120,66 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
     }
 
     // Check signed Message
+    function getSigner(
+        uint256 _myValue,
+        bytes memory _signature,
+        address contractAddress
+    ) public pure returns (address) {
+        // EIP721 domain type
+        string memory name = "Ethereum Lottery";
+        string memory version = "1";
+        uint256 chainId = 31337;
+        address verifyingContract = contractAddress;
+
+        // stringified types
+        string
+            memory EIP712_DOMAIN_TYPE = "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)";
+        string memory MESSAGE_TYPE = "Message(uint256 myValue)";
+
+        // hash to prevent signature collision
+        bytes32 DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256(abi.encodePacked(EIP712_DOMAIN_TYPE)),
+                keccak256(abi.encodePacked(name)),
+                keccak256(abi.encodePacked(version)),
+                chainId,
+                verifyingContract
+            )
+        );
+
+        // hash typed data
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                "\x19\x01", // backslash is needed to escape the character
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(keccak256(abi.encodePacked(MESSAGE_TYPE)), _myValue))
+            )
+        );
+
+        // split signature
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        if (_signature.length != 65) {
+            return address(0);
+        }
+        assembly {
+            r := mload(add(_signature, 32))
+            s := mload(add(_signature, 64))
+            v := byte(0, mload(add(_signature, 96)))
+        }
+        if (v < 27) {
+            v += 27;
+        }
+        if (v != 27 && v != 28) {
+            return address(0);
+        } else {
+            // verify
+            return ecrecover(hash, v, r, s);
+        }
+    }
+
+    // Check signed Message
     function verify(bytes memory _signature, address _signer, string memory _message) public pure returns (bool) {
         bytes32 messageHash = getMessageHash(_message);
         bytes32 ethSignesMessageHash = getEthSignedMessageHash(messageHash);
