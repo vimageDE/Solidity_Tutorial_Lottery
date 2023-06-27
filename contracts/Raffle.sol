@@ -123,12 +123,13 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
     function getSigner(
         uint256 _myValue,
         bytes memory _signature,
-        address contractAddress
+        address contractAddress,
+        uint256 chainId
     ) public pure returns (address) {
         // EIP721 domain type
         string memory name = "Ethereum Lottery";
         string memory version = "1";
-        uint256 chainId = 31337;
+        // uint256 chainId = 31337;
         address verifyingContract = contractAddress;
 
         // stringified types
