@@ -10,6 +10,7 @@ error Raffle__NotEnoughEthEntered();
 error Raffle__TransferFailed();
 error Raffle__NotOpen();
 error Raffle_UpkeeNotNeeded(uint256 currentBalance, uint256 numPlayers, uint256 raffleState);
+error Raffle_SignatureWrongLength();
 
 contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
     // Type declarations
@@ -36,7 +37,7 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
     // Events
     event RaffleEnter(address indexed player);
     event RequestedRaffleWinner(uint256 indexed requestId);
-    event WinnerPicked(address indexed winner);
+    event WinnerPicked(address indexed winner, uint256 indexed winAmount);
 
     constructor(
         address vrfCoordinatorV2,
@@ -110,12 +111,50 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         s_raffleState = RaffleState.OPEN;
         s_players = new address payable[](0);
         s_lastTimeStamp = block.timestamp;
+        uint256 winBalance = address(this).balance;
         (bool success, ) = recentWinner.call{value: address(this).balance}("");
         if (!success) {
             revert Raffle__TransferFailed();
         }
-        emit WinnerPicked(recentWinner);
+        emit WinnerPicked(recentWinner, winBalance);
     }
+
+    // Check signed Message
+    function verify(bytes memory _signature, address _signer, string memory _message) public pure returns (bool) {
+        bytes32 messageHash = getMessageHash(_message);
+        bytes32 ethSignesMessageHash = getEthSignedMessageHash(messageHash);
+
+        address recoveredSigner = recoverSigner(ethSignesMessageHash, _signature);
+        return recoveredSigner == _signer;
+    }
+
+    function recoverSigner(bytes32 _ethSignedMesssageHash, bytes memory _signature) internal pure returns (address) {
+        (bytes32 r, bytes32 s, uint8 v) = splitSignature(_signature);
+
+        return ecrecover(_ethSignedMesssageHash, v, r, s);
+    }
+
+    function splitSignature(bytes memory _signature) internal pure returns (bytes32 r, bytes32 s, uint8 v) {
+        if (_signature.length != 65) {
+            revert Raffle_SignatureWrongLength();
+        }
+
+        assembly {
+            r := mload(add(_signature, 32))
+            s := mload(add(_signature, 64))
+            v := byte(0, mload(add(_signature, 96)))
+        }
+    }
+
+    function getMessageHash(string memory _message) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(_message));
+    }
+
+    function getEthSignedMessageHash(bytes32 _messageHash) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash));
+    }
+
+    // Get Variables
 
     function getEntranceFee() public view returns (uint256) {
         return i_entranceFee;
@@ -151,5 +190,9 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
 
     function getInterval() public view returns (uint256) {
         return i_interval;
+    }
+
+    function getAllPlayers() public view returns (address payable[] memory) {
+        return s_players;
     }
 }
