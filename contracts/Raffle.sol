@@ -120,22 +120,17 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
     }
 
     // Check signed Message
-    function getSigner(
-        uint256 _myValue,
-        bytes memory _signature,
-        address contractAddress,
-        uint256 chainId
-    ) public pure returns (address) {
+    function getSigner(string memory _myValue, bytes memory _signature) public view returns (address) {
         // EIP721 domain type
         string memory name = "Ethereum Lottery";
         string memory version = "1";
-        // uint256 chainId = 31337;
-        address verifyingContract = contractAddress;
+        uint256 chainId = block.chainid;
+        address verifyingContract = address(this);
 
         // stringified types
         string
             memory EIP712_DOMAIN_TYPE = "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)";
-        string memory MESSAGE_TYPE = "Message(uint256 myValue)";
+        string memory MESSAGE_TYPE = "Message(string myValue)";
 
         // hash to prevent signature collision
         bytes32 DOMAIN_SEPARATOR = keccak256(
@@ -153,7 +148,9 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
             abi.encodePacked(
                 "\x19\x01", // backslash is needed to escape the character
                 DOMAIN_SEPARATOR,
-                keccak256(abi.encode(keccak256(abi.encodePacked(MESSAGE_TYPE)), _myValue))
+                keccak256(
+                    abi.encodePacked(keccak256(abi.encodePacked(MESSAGE_TYPE)), keccak256(abi.encodePacked(_myValue)))
+                )
             )
         );
 
